@@ -12,18 +12,8 @@ from imutils.perspective import four_point_transform
 from itertools import combinations
 
 """
-Parameters Settings
+Classical edge detection function
 """
-debug = False
-debug_dir = 'debug/'
-PROCESS_SIZE = 1000
-MODEL_INPUT_SIZE = 1000  # kept for minimal changes, not used now
-name = ''
-
-"""
-Func: Edge Detection (Classical only)
-"""
-
 def detect_edge(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     gray = cv2.normalize(gray, None, 0, 255, cv2.NORM_MINMAX)
@@ -31,26 +21,22 @@ def detect_edge(img):
     mean_gray = cv2.mean(gray)
     TH_LIGHT = 150
     if mean_gray[0] > TH_LIGHT:
-        gray = exposure.adjust_gamma(gray, gamma=6)
+        gray = exposure.adjust_gamma(gray, gamma=6)     # darken if the image is very bright
         gray = exposure.equalize_adapthist(gray, kernel_size=None, clip_limit=0.02)
         gray = img_as_ubyte(gray)
 
     kernel = np.ones((15, 15), np.uint8)
+    # denoise (morph close → median blur → bilateral filter)
     closing = cv2.morphologyEx(gray, cv2.MORPH_CLOSE, kernel)
     blurred = cv2.medianBlur(closing, 5)
     blurred = cv2.bilateralFilter(blurred, d=0, sigmaColor=15, sigmaSpace=10)
-
     edged = cv2.Canny(blurred, 75, 200)
-
-    if debug:
-        cv2.imwrite(pjoin(debug_dir, name + "_Cannyedge.png"), edged)
 
     return edged
 
 """
-Func: Four Corner Detection
+Four corners detection function
 """
-
 def cross_point(line1, line2):
     x = 0
     y = 0
@@ -105,12 +91,8 @@ def checked_valid_transform(approx):
             if 90 - TH_ANGLE < angel < 90 + TH_ANGLE:
                 continue
             else:
-                if debug:
-                    print("Detection Error: The detected corners could not form a valid quadrilateral for transformation.")
                 raise Exception("Corner points invalid.")
     else:
-        if debug:
-            print("Detection Error: Could not find four corners from the detected edge.")
         raise Exception("Corner points less than 4.")
     return True
 
@@ -137,28 +119,9 @@ def get_cnt(edged, img, ratio):
             break
         cv2.drawContours(edgelines, [cnts[i]], 0, (255, 255, 255), -1)
 
-    if debug:
-        cv2.imwrite(pjoin(debug_dir, name + "_edgelines.png"), edgelines)
-
     lines = cv2.HoughLines(edgelines, 1, np.pi / 180, 200)
     if lines is None or len(lines) < 4:
-        if debug:
-            print("Detection Error: Could not find enough lines (must more than 4) from the detected edge.")
         raise Exception("Lines not found.")
-
-    if debug:
-        lines_draw = np.zeros((len(lines), 4), dtype=int)
-        img_draw = img.copy()
-        for i in range(0, len(lines)):
-            rho, theta = lines[i][0][0], lines[i][0][1]
-            a = np.cos(theta); b = np.sin(theta)
-            x0 = a * rho; y0 = b * rho
-            lines_draw[i][0] = int(x0 + 1000 * (-b))
-            lines_draw[i][1] = int(y0 + 1000 * (a))
-            lines_draw[i][2] = int(x0 - 1000 * (-b))
-            lines_draw[i][3] = int(y0 - 1000 * (a))
-            cv2.line(img_draw, (lines_draw[i][0], lines_draw[i][1]), (lines_draw[i][2], lines_draw[i][3]), (0, 255, 0), 1)
-        cv2.imwrite(pjoin(debug_dir, name + '_hough1.png'), img_draw)
 
     strong_lines = np.zeros([4, 1, 2])
     n2 = 0
@@ -191,8 +154,6 @@ def get_cnt(edged, img, ratio):
         lines1[i][1] = int(y0 + 1000 * (a))
         lines1[i][2] = int(x0 - 1000 * (-b))
         lines1[i][3] = int(y0 - 1000 * (a))
-        if debug:
-            cv2.line(img, (lines1[i][0], lines1[i][1]), (lines1[i][2], lines1[i][3]), (0, 255, 0), 3)
 
     approx = np.zeros((len(strong_lines), 1, 2), dtype=int)
     index = 0
@@ -206,16 +167,12 @@ def get_cnt(edged, img, ratio):
             approx[index] = (int(x), int(y))
             index = index + 1
 
-    if debug:
-        cv2.imwrite(pjoin(debug_dir, name + '_hough2.png'), img)
-
     if checked_valid_transform(approx):
         return approx * ratio
 
 """
-Func: Image Postprocess
+Image post processing functions
 """
-
 def set_corner(img, r):
     b_channel, g_channel, r_channel = cv2.split(img)
     alpha_channel = np.ones(b_channel.shape, dtype=b_channel.dtype) * 255
@@ -259,71 +216,61 @@ def finetune(img, ratio):
         img = cv2.transpose(img)
         img = cv2.flip(img, 0)
     return img
+# def finetune(img, ratio):
+#     offset = int(2 * ratio)
+#     img = img[offset + 15:img.shape[0] - offset,
+#               int(offset * 2):img.shape[1] - int(offset * 2), :]
+#     if img.shape[0] < img.shape[1]:
+#         img = cv2.resize(img, (img.shape[1], int(img.shape[1] / 1000 * 631)))
+#         r = int(img.shape[1] / 1000 * 37.15)
+#     else:
+#         img = cv2.resize(img, (img.shape[1], int(img.shape[1] / 631 * 1000)))
+#         r = int(img.shape[1] / 631 * 37.15)
+#     img = set_corner(img, r)
+#     if img.shape[0] > img.shape[1]:
+#         img = cv2.transpose(img)
+#         img = cv2.flip(img, 0)
+#     return img
 
 """
-Func: Inference (CNN removed)
+Run nference on the input images
 """
-
 def inference_all(input_dir, output_dir):
     count = 0
-    image_format = [".jpg", ".jpeg", ".bmp", ".png"]
+    image_process_size = 1000
     file_list = os.listdir(input_dir)
-    file_list.sort()
+
     for i in range(0, len(file_list)):
         in_path = os.path.join(input_dir, file_list[i])
-
-        if os.path.isfile(in_path):
-            if os.path.splitext(in_path)[1] not in image_format:
-                print("{} is not an acceptable image file, please use .jpg/.jpeg/.bmp/.png as input.".format(file_list[i]))
-                continue
-        else:
-            continue
-
-        global name
         name = os.path.splitext(file_list[i])[0]
         out_path = os.path.join(output_dir, name + ".png")
 
-        try:
-            image = cv2.imread(in_path)
-            img = cv2.resize(image, (PROCESS_SIZE, int(PROCESS_SIZE * image.shape[0] / image.shape[1])))
-            ratio = image.shape[1] / PROCESS_SIZE
-        except:
-            continue
+        image = cv2.imread(in_path)
+        img = cv2.resize(image, (image_process_size, int(image_process_size * image.shape[0] / image.shape[1])))    # (W, H) -> (1000, 1000*H/W)) 
+        ratio = image.shape[1] / image_process_size
 
         try:
-            if debug:
-                print("Edge Detection: classical Canny method...")
             edged = detect_edge(img)
             corners = get_cnt(edged, img, ratio)
         except Exception as e:
-            print(f"Failed. {file_list[i]} could not be rectified :(  ({e})")
+            print(f"Failed, {file_list[i]} can not be rectified, {e}")
             continue
 
         try:
             result = four_point_transform(image, corners.reshape(4, 2))
             result = finetune(result, ratio)
-
-            # 🔹 Force fixed size 1000x631
-            result = cv2.resize(result, (1000, 631), interpolation=cv2.INTER_AREA)
-
+            result = cv2.resize(result, (1000, 631), interpolation=cv2.INTER_AREA)      # 1000/631 = 1.584 is the original egyptian id card scale (W/H)
             cv2.imwrite(out_path, result)
-            print("Success! Output saved in " + os.path.abspath(out_path))
+            print(f"Rectified image {1+count} saved in " + os.path.abspath(out_path))
             count = count + 1
         except Exception as e:
-            print(f"Failed. {file_list[i]} could not be rectified :(  ({e})")
+            print(f"Failed, {file_list[i]} could not be rectified, {e}")
 
-    print("Done! {}/{} success.".format(count, len(file_list)))
-
-
+    print(f"Done, rectified {count}/{len(file_list)} image")
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3 and len(sys.argv) != 3:
-        print("Parameters Error: invalid input or output.")
-        sys.exit(1)
-
-    _, input_, output_ = sys.argv
-
-    inference_all(input_, output_)
+    f, input_dir, output_dir = sys.argv
+    inference_all(input_dir, output_dir)
 
 
 
