@@ -1,0 +1,10 @@
+Pillow==11.3.0
+config
+imutils==0.5.4
+models
+numpy==2.0.1
+opencv-python==4.10.0
+pytesseract==0.3.13
+scikit-image==0.25.2
+torch==2.5.1
+ultralytics==8.3.184
