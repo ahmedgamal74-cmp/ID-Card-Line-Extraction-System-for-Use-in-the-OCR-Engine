@@ -174,17 +174,17 @@ segmentation_model  = "models/best_yolov8s_seg.pt"
 
 ```mermaid
 flowchart LR
-  A[Raw ID images\n0_IDs_input] --> B[Rectification\nrectify.py → 1000×631]
-  B --> C[Derotation\ncorr.py (ROI correlation)]
+  A[Raw ID images<br/>0_IDs_input] --> B[Rectification<br/>rectify.py -> 1000x631]
+  B --> C[Derotation (0/180)<br/>corr.py ROI correlation]
   C --> D{Extraction Mode}
 
-  D -->|classic| E[roi_extract.py\nusing ROIs.json]
-  D -->|det| F[infer_det.py\nYOLO/RT-DETR]
-  D -->|seg| G[infer_seg.py\nYOLOv8-SEG]
+  D -->|classic| E[roi_extract.py<br/>using ROIs.json]
+  D -->|det| F[infer_det.py<br/>YOLO/RT-DETR]
+  D -->|seg| G[infer_seg.py<br/>YOLOv8-SEG]
 
-  E --> H[Crops → 3_ROIs_classic/]
-  F --> I[Crops + annotated previews → 3_ROIs_det/]
-  G --> J[Crops + annotated previews → 3_ROIs_seg/]
+  E --> H[Crops -> 3_ROIs_classic/]
+  F --> I[Crops + annotated previews -> 3_ROIs_det/]
+  G --> J[Crops + annotated previews -> 3_ROIs_seg/]
 ```
 
 **Rectification (`rectify.py`)**  
