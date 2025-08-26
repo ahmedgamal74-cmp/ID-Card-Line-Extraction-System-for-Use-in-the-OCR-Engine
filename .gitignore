@@ -19,3 +19,6 @@ env/
 models/best_seg.pt
 models/egyId_weights.pt
 inf.py
+test.py
+*.docx
+*.pdf
