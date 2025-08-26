@@ -175,7 +175,7 @@ segmentation_model  = "models/best_yolov8s_seg.pt"
 ```mermaid
 flowchart LR
   A[Raw ID images\n0_IDs_input] --> B[Rectification\nrectify.py → 1000×631]
-  B --> C[Derotation (0°/180°)\ncorr.py (ROI correlation)]
+  B --> C[Derotation (0/180)\ncorr.py (ROI correlation)]
   C --> D{Extraction Mode}
 
   D -->|classic| E[roi_extract.py\nusing ROIs.json]
