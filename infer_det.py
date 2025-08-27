@@ -6,64 +6,56 @@ import os
 import cv2
 import torch
 from ultralytics import YOLO
+from config import *
 
-# --- config (edit MODEL_PATH) ---
-MODEL_PATH = r"models\rt_detr_1.pt"  # yolov8s_detect   /    rt_detr_1
+# Configrations
+if detection_model=='detr':
+    MODEL_PATH = r"models\rt_detr_1.pt"  
+else:
+    MODEL_PATH = r"models\yolov8s_detect.pt"
+
+if torch.cuda.is_available():
+    DEVICE="cuda:0"
+else:
+    DEVICE="cpu"
+
 CONF = 0.65
 IOU = 0.7
-IMGSZ = 640
-DEVICE = 0  # GPU 0; will fall back to CPU if CUDA isn't available
-
-VALID_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
+IMG_SIZE = 640
+image_types = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
 
 def clamp(val, lo, hi):
     return max(lo, min(int(val), hi))
 
 def run_folder(input_dir: Path, save_dir: Path):
-    # pick device
-    device_arg = DEVICE
-    if device_arg != "cpu" and not torch.cuda.is_available():
-        print("[WARN] CUDA not available, using CPU.")
-        device_arg = "cpu"
 
-    # load model once
+    # load detection model
     model = YOLO(MODEL_PATH)
 
-    # gather images (recursive)
-    imgs = [p for p in input_dir.rglob("*") if p.suffix.lower() in VALID_EXTS]
+    # read images from the folder
+    imgs = [p for p in input_dir.rglob("*") if p.suffix.lower() in image_types]
     if not imgs:
-        print(f"[INFO] No images found in: {input_dir}")
+        print(f"No images found in {input_dir}")
         return
 
-    print(f"[INFO] Found {len(imgs)} images. Running inference on device={device_arg}...")
+    print(f"Found {len(imgs)} images")
+    print(f"Inference on {DEVICE} started...")
 
-    # stream=True yields results one-by-one and includes r.path
-    for r in model.predict(
-        source=[str(p) for p in imgs],
-        conf=CONF,
-        iou=IOU,
-        imgsz=IMGSZ,
-        device=device_arg,
-        verbose=False,
-        stream=True
-    ):
+    # return results in stream
+    count=0
+    for r in model.predict(source=[str(p) for p in imgs], conf=CONF, iou=IOU, imgsz=IMG_SIZE,
+                           device=DEVICE, verbose=False, stream=True):
+        
         img_path = Path(getattr(r, "path", "image")).resolve()
         img_stem = img_path.stem
 
-        # per-image output folder
+        # output folder for each image
         out_dir = save_dir / img_stem
         out_dir.mkdir(parents=True, exist_ok=True)
 
         # save annotated image
         annotated = r.plot()
         cv2.imwrite(str(out_dir / f"{img_stem}_annotated.jpg"), annotated)
-
-        # extract and save crops for each detection
-        if r.boxes is None or len(r.boxes) == 0:
-            # still drop an empty marker for traceability
-            (out_dir / "_no_detections.txt").write_text("No detections.")
-            print(f"[OK] {img_path.name}: 0 detections")
-            continue
 
         H, W = r.orig_img.shape[:2]
         names = r.names if hasattr(r, "names") else model.names
@@ -89,22 +81,21 @@ def run_folder(input_dir: Path, save_dir: Path):
             crop_name = f"{i:03d}_{cls_name}_{conf:.2f}.jpg"
             cv2.imwrite(str(out_dir / crop_name), crop)
 
-        print(f"[OK] {img_path.name}: {len(r.boxes)} detections -> {out_dir}")
+        count+=1
+        print(f"Image {count}: {img_path.name}: {len(r.boxes)} detections saved to {out_dir}")
 
 def parse_args():
-    ap = argparse.ArgumentParser(
-        description="Run YOLO on a folder, save per-image detection crops and annotated images."
-    )
-    ap.add_argument("--input_dir", required=True, help="Folder of input images")
-    ap.add_argument("--save_dir", required=True, help="Where to save results")
+    ap = argparse.ArgumentParser(description="YOLO inference on a floder")
+    ap.add_argument("--input_dir", required=True, help="input images folder")
+    ap.add_argument("--save_dir", required=True, help="output images folder")
     return ap.parse_args()
 
 def main():
     args = parse_args()
     input_dir = Path(args.input_dir)
     save_dir = Path(args.save_dir)
-    if not input_dir.exists():
-        raise FileNotFoundError(f"input_dir not found: {input_dir}")
+    # if not input_dir.exists():
+    #     raise FileNotFoundError(f"input_dir not found: {input_dir}")
     save_dir.mkdir(parents=True, exist_ok=True)
 
     run_folder(input_dir, save_dir)

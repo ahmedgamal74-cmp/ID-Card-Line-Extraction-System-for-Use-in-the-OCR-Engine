@@ -9,7 +9,7 @@ from ultralytics import YOLO
 MODEL_PATH = r"models\yolov8s_seg.pt"
 CONF = 0.25
 IMGSZ = 640
-DEVICE = 0  # GPU 0 (falls back to CPU if unavailable)
+DEVICE = 0      # cuda gpu
 VALID_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
 
 def clamp(v, lo, hi): return max(lo, min(int(v), hi))
