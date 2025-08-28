@@ -97,8 +97,6 @@ git clone https://github.com/ahmedgamal74-cmp/ID-Card-Line-Extraction-System-for
 cd ID-Card-Line-Extraction-System-for-Use-in-the-OCR-Engine
 ```
 
-> If you skip `git lfs pull`, the files in `models/` may be only tiny pointer files and the code won’t run.
-
 Install dependencies:
 
 ```bash
