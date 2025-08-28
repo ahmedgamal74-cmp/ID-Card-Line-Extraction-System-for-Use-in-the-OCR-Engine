@@ -17,7 +17,7 @@ The system includes **classical CV rectification + orientation fixing**, with th
 
 - [Features](#features)  
 - [Repo Structure](#repo-structure)  
-- [Requirements](#requirements)  
+- [Setup](#setup)  
 - [Quick Start](#quick-start)  
 - [Configuration](#configuration)  
 - [End-to-End Pipeline](#end-to-end-pipeline)  
@@ -28,7 +28,7 @@ The system includes **classical CV rectification + orientation fixing**, with th
 - [Troubleshooting](#troubleshooting)  
 - [FAQ](#faq)  
 - [Acknowledgements](#acknowledgements)  
-- [License](#license)
+<!-- - [License](#license) -->
 
 ---
 
@@ -84,31 +84,38 @@ ID-Card-Line-Extraction-System-for-Use-in-the-OCR-Engine/
 
 ---
 
-## Requirements
+## Setup
 
-- **Python** 3.9–3.12  
-- **pip** (or conda/mamba)  
-- **GPU (CUDA)** optional but recommended for detection/segmentation
+- **Python** 3.12  
+- **conda** (or pip)  
+
+Clone Repo
+
+```bash
+# Clone the repo
+git clone https://github.com/ahmedgamal74-cmp/ID-Card-Line-Extraction-System-for-Use-in-the-OCR-Engine.git
+cd ID-Card-Line-Extraction-System-for-Use-in-the-OCR-Engine
+```
+
+> If you skip `git lfs pull`, the files in `models/` may be only tiny pointer files and the code won’t run.
 
 Install dependencies:
 
 ```bash
-# Create and activate a virtual environment (recommended)
-python -m venv .venv
-# Windows:
-.venv\Scripts\activate
-# Linux/macOS:
-source .venv/bin/activate
+# (Recommended) create and activate a clean env
+conda create -n cyshield_1 python=3.12 -y 
+conda activate cyshield_1
 
-# Install core dependencies
-pip install --upgrade pip
-pip install opencv-python numpy imutils scikit-image matplotlib tqdm
-pip install ultralytics  # includes YOLOv8 + RT-DETR support via Ultralytics
+# Install Python deps
+python -m pip install --upgrade pip
+pip install -r requirements.txt
 
 # If using CUDA, install a torch build compatible with your CUDA version:
 # Example (adjust per your CUDA): pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
 # CPU fallback is automatic if CUDA is unavailable.
 ```
+
+The repo’s `requirements.txt` pins PyTorch CPU-only for faster reproducing
 
 > **Note:** If you hit a torch/ultralytics version mismatch, reinstall torch first (GPU or CPU build), then `pip install ultralytics` again.
 
@@ -228,7 +235,7 @@ Move the resulting `best.pt` into `models/` and set the path in `config.py`.
 
 ## Reproducing Results
 
-1) **Install environment** (see [Requirements](#requirements)).  
+1) **Install environment** (see [Setup](#setup)).  
 2) **Obtain dataset** and (optionally) **train** models using the notebooks.  
 3) **Place weights** under `models/` (or update paths in `config.py`).  
 4) **Prepare derotation references** in `0_IDs_derotation_ref/` (a few upright rectified samples).  
@@ -309,7 +316,7 @@ The segmentation path visualizes masks in annotated previews; crops saved are re
 - Roboflow dataset tooling  
 - OpenCV, NumPy, scikit-image, imutils
 
----
+<!-- ---
 
 ## License
 
@@ -332,4 +339,4 @@ If you use this project in academic work, please cite and/or reference this repo
 
 --- 
 
-**Happy extracting!**
+**Happy extracting!** -->
