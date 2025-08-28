@@ -4,7 +4,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # ROIs extract using: "classic" for classical method
 #                     "det"     for detection model 
 #                     "seg"     for segmenation model
-option = "classic"
+option = "seg"
 
 # detection_model: "detr" for RT-DETR
 #                  "yolo" for YOLO
