@@ -5,21 +5,22 @@ from pathlib import Path
 import cv2
 import torch
 from ultralytics import YOLO
+from config import *
 
 MODEL_PATH = r"models\yolov8s_seg.pt"
 CONF = 0.25
 IMGSZ = 640
-DEVICE = 0      # cuda gpu
+device=device
 VALID_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
 
 def clamp(v, lo, hi): return max(lo, min(int(v), hi))
 
 def run_folder(input_dir: Path, save_dir: Path):
-    # pick device
-    device_arg = DEVICE
-    if device_arg != "cpu" and not torch.cuda.is_available():
-        print("[WARN] CUDA not available, using CPU.")
-        device_arg = "cpu"
+    # # # pick device
+    # # device_arg = DEVICE
+    # if device != "cpu" and not torch.cuda.is_available():
+    #     print("[WARN] CUDA not available, using CPU.")
+    #     device_arg = "cpu"
 
     # load model once (seg or detect weights both fine)
     model = YOLO(MODEL_PATH)
@@ -30,14 +31,14 @@ def run_folder(input_dir: Path, save_dir: Path):
         print(f"[INFO] No images found in: {input_dir}")
         return
 
-    print(f"[INFO] Found {len(imgs)} images. Running inference on device={device_arg}...")
+    print(f"[INFO] Found {len(imgs)} images. Running inference on device={device}...")
 
     # stream=True yields results one-by-one and includes r.path
     for r in model.predict(
         source=[str(p) for p in imgs],
         conf=CONF,
         imgsz=IMGSZ,
-        device=device_arg,
+        device=device,
         verbose=False,
         stream=True
     ):

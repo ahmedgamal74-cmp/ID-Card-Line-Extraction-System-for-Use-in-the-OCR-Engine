@@ -3,6 +3,9 @@ import sys, subprocess
 from pathlib import Path
 from config import *
 
+device=device
+print("Using:", device)
+
 # rectify
 print("Rectification started...")
 Path(rectify_output_dir).mkdir(parents=True, exist_ok=True)

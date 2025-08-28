@@ -14,10 +14,12 @@ if detection_model=='detr':
 else:
     MODEL_PATH = r"models\yolov8s_detect.pt"
 
-if torch.cuda.is_available():
-    DEVICE="cuda:0"
-else:
-    DEVICE="cpu"
+# if torch.cuda.is_available():
+#     DEVICE="cuda:0"
+# else:
+#     DEVICE="cpu"
+
+device=device
 
 CONF = 0.65
 IOU = 0.7
@@ -39,12 +41,12 @@ def run_folder(input_dir: Path, save_dir: Path):
         return
 
     print(f"Found {len(imgs)} images")
-    print(f"Inference on {DEVICE} started...")
+    print(f"Inference on {device} started...")
 
     # return results in stream
     count=0
     for r in model.predict(source=[str(p) for p in imgs], conf=CONF, iou=IOU, imgsz=IMG_SIZE,
-                           device=DEVICE, verbose=False, stream=True):
+                           device=device, verbose=False, stream=True):
         
         img_path = Path(getattr(r, "path", "image")).resolve()
         img_stem = img_path.stem
