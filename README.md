@@ -100,7 +100,7 @@ cd ID-Card-Line-Extraction-System-for-Use-in-the-OCR-Engine
 Install dependencies:
 
 ```bash
-# (Recommended) create and activate a clean env
+# create and activate a clean env (recommended)
 conda create -n cyshield_1 python=3.12 -y 
 conda activate cyshield_1
 

@@ -12,7 +12,7 @@ from config import *
 # config
 # coorelation area -> the green area of the ID because it is distinct
 corr_roi = (416, 3, 908, 156)    # (x1, y1, x2, y2)
-corr_thresh = 0.10
+corr_thresh = 0.2
 image_types = image_input_types
 
 """
@@ -109,8 +109,7 @@ def main():
         in_roi = img[y1:y2, x1:x2]
         score = corr_green(ref_roi, in_roi)
         # check if needs derotation or not 
-        is_correct = score >= corr_thresh
-        if is_correct:
+        if score >= corr_thresh:
             out_path = save_dir / img_path.name
             cv2.imwrite(str(out_path), img)
             correct += 1
