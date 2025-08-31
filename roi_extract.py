@@ -1,41 +1,37 @@
-# python roi_extract.py final/  ROIs.json --outdir ROIs --ext png
+# python roi_extract.py 2_IDs_derotated/  ROIs.json --outdir 3_ROIs_classic 
 
 import os
-import json
-import argparse
 import cv2
+import json, argparse, shutil
 from pathlib import Path
+from config import *
 
-IMG_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
+# config
+image_types = image_input_types
 
-def clamp(v, lo, hi):
-    return max(lo, min(hi, v))
+"""
+This function to make the output crops are withing the input image size
+"""
+def clamp(val, lo, hi): return max(lo, min((val), hi))
 
-def list_images(d: Path):
-    return [p for p in sorted(d.glob("*")) if p.suffix.lower() in IMG_EXTS]
-
-def process_one_image(image_path, rois, outdir, ext):
+"""
+extract and save the ROI crops from an image
+"""
+def process_one_image(image_path, rois, outdir):
+    # read image
     img = cv2.imread(image_path)
-    if img is None:
-        print(f"Could not read image: {image_path}")
-        return 0, 0
     h, w = img.shape[:2]
 
+    if Path(outdir).exists() and Path(outdir).is_dir(): shutil.rmtree(Path(outdir))
     os.makedirs(outdir, exist_ok=True)
 
-    saved = 0
+    crops_count = 0
+    # loop on ROIs to extract
     for roi in rois:
-        try:
-            name = str(roi["name"]).strip()
-            x1, y1, x2, y2 = int(roi["x1"]), int(roi["y1"]), int(roi["x2"]), int(roi["y2"])
-        except KeyError as e:
-            print(f"Skipping ROI missing key: {e}")
-            continue
-        except (TypeError, ValueError):
-            print(f"Skipping ROI with invalid values: {roi}")
-            continue
+        name = str(roi["name"]).strip()
+        x1, y1, x2, y2 = int(roi["x1"]), int(roi["y1"]), int(roi["x2"]), int(roi["y2"])
 
-        # Normalize and clamp to image bounds
+        # sort and clamp within image bounds
         x_lo, x_hi = sorted((x1, x2))
         y_lo, y_hi = sorted((y1, y2))
         x_lo = clamp(x_lo, 0, w)
@@ -43,64 +39,39 @@ def process_one_image(image_path, rois, outdir, ext):
         y_lo = clamp(y_lo, 0, h)
         y_hi = clamp(y_hi, 0, h)
 
-        if x_hi <= x_lo or y_hi <= y_lo:
-            print(f"Skipping ROI '{name}': empty/invalid after clamping.")
-            continue
-
+        # crop to save
+        crops_count+=1
         crop = img[y_lo:y_hi, x_lo:x_hi]
+        out_path = os.path.join(outdir, f"{crops_count}_{name}.jpg")
 
-        # Safe filename
-        safe_name = "".join(c if c.isalnum() or c in ("-","_") else "_" for c in name)
-        out_path = os.path.join(outdir, f"{safe_name}.{ext}")
+        cv2.imwrite(out_path, crop, [int(cv2.IMWRITE_JPEG_QUALITY), 95])        # 95% quality
 
-        if ext.lower() in ("jpg","jpeg"):
-            ok = cv2.imwrite(out_path, crop, [int(cv2.IMWRITE_JPEG_QUALITY), 95])
-        else:
-            ok = cv2.imwrite(out_path, crop)
+    return crops_count
 
-        if ok:
-            saved += 1
-            print(f"[{Path(image_path).name}] Saved ROI '{name}' -> {out_path}")
-        else:
-            print(f"[{Path(image_path).name}] Failed to save ROI '{name}'.")
-
-    return saved, len(rois)
-
+"""
+main function
+"""
 def main():
-    p = argparse.ArgumentParser(description="Crop ROIs from an ID card image using a JSON spec.")
-    p.add_argument("image_path", help="Path to a rectified ID image OR a folder of images")
-    p.add_argument("rois_json", help="Path to the ROI JSON file (list of ROI objects)")
-    p.add_argument("--outdir", default="roi_crops", help="Output directory (default: roi_crops)")
-    p.add_argument("--ext", default="png", choices=["png","jpg","jpeg"], help="Output image format (default: png)")
+    p = argparse.ArgumentParser()
+    p.add_argument("image_path")
+    p.add_argument("rois_json")
+    p.add_argument("--outdir", default="roi_crops")
     args = p.parse_args()
 
-    in_path = Path(args.image_path)
+    input_path = Path(args.image_path)
 
-    # Load ROIs (unchanged logic)
-    with open(args.rois_json, "r", encoding="utf-8") as f:
-        rois = json.load(f)
-    if not isinstance(rois, list):
-        raise SystemExit("ROI JSON must be a list of ROI objects.")
+    # read ROIs from the json file
+    with open(args.rois_json, "r", encoding="utf-8") as f: rois = json.load(f)
 
-    total_saved = 0
+    image_conut = 0
     total_expected = 0
-
-    if in_path.is_dir():
-        # Folder mode: process each image; save into outdir/<image_stem>/
-        images = list_images(in_path)
-        if not images:
-            raise SystemExit(f"No images found in folder: {in_path}")
-        for img_p in images:
-            sub_out = Path(args.outdir) / img_p.stem
-            saved, expected = process_one_image(str(img_p), rois, str(sub_out), args.ext)
-            total_saved += saved
-            total_expected += expected
-        print(f"Done. Saved {total_saved}/{total_expected * len(images) // max(len(images),1)} crops across {len(images)} images to '{args.outdir}'.")
-    else:
-        # Single image mode: exact original behavior
-        os.makedirs(args.outdir, exist_ok=True)
-        saved, expected = process_one_image(str(in_path), rois, args.outdir, args.ext)
-        print(f"Done. Saved {saved}/{expected} crops to '{args.outdir}'.")
+    # process and save each image
+    images = [p for p in sorted(input_path.glob("*")) if p.suffix.lower() in image_types]
+    for img_path in images:
+        image_conut+=1
+        out_image_path = Path(args.outdir) / img_path.stem
+        num_crops = process_one_image(str(img_path), rois, str(out_image_path))
+        print(f"For image ({image_conut}){Path(img_path).name}: saved {num_crops} crops  in {out_image_path}")
 
 if __name__ == "__main__":
     main()

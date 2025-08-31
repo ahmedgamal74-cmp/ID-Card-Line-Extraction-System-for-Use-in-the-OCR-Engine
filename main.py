@@ -18,11 +18,11 @@ subprocess.run([sys.executable, "corr.py", "--ref_dir", derotation_ref_dir,
                                 "--img_dir", rectify_output_dir, "--save_dir", derotated_dir], check=True)
 
 # extraction mode (classic/detection/segmentation)
-if option == "det":
+if extract_option == "det":
     print(f"\nCrops (ROIs) extraction using {detection_model} detection model started...")
     Path(det_out_dir).mkdir(parents=True, exist_ok=True)
     subprocess.run([sys.executable, "infer_det.py", "--input_dir", derotated_dir, "--save_dir", det_out_dir], check=True)
-elif option == "seg":
+elif extract_option == "seg":
     print(f"\nCrops (ROIs) extraction using yolo segmentation model started...")
     Path(seg_out_dir).mkdir(parents=True, exist_ok=True)
     subprocess.run([sys.executable, "infer_seg.py", "--input_dir", derotated_dir, "--save_dir", seg_out_dir], check=True)
@@ -30,5 +30,5 @@ else:
     print(f"\nCrops (ROIs) extraction using classical method started...")
     Path(classic_out_dir).mkdir(parents=True, exist_ok=True)
     subprocess.run([sys.executable, "roi_extract.py", derotated_dir, rois_json, 
-                                    "--outdir", classic_out_dir, "--ext", crops_output_fromat], check=True)
+                                    "--outdir", classic_out_dir], check=True)
 
