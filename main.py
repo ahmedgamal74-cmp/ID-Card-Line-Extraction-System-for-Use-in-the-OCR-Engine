@@ -14,7 +14,7 @@ subprocess.run([sys.executable, "rectify.py", rectify_input_dir, rectify_output_
 # derotate
 print("\nDerotatation started...")
 Path(derotated_dir).mkdir(parents=True, exist_ok=True)
-subprocess.run([sys.executable, "corr.py", "--ref_dir", derotation_ref_dir, 
+subprocess.run([sys.executable, "derotate.py", "--ref_dir", derotation_ref_dir, 
                                 "--img_dir", rectify_output_dir, "--save_dir", derotated_dir], check=True)
 
 # extraction mode (classic/detection/segmentation)
