@@ -54,7 +54,7 @@ ID-Card-Line-Extraction-System-for-Use-in-the-OCR-Engine/
 ├─ config.py               # All paths + mode selection ("classic" | "det" | "seg")
 │
 ├─ rectify.py              # Classical rectification → 1000×631 (handles 90°/270°)
-├─ corr.py                 # 0° vs 180° derotation using green-channel ROI correlation
+├─ derotate.py                 # 0° vs 180° derotation using green-channel ROI correlation
 │
 ├─ roi_select.py           # Interactive ROI authoring tool → produces ROIs.json
 ├─ ROIs.json               # Named fixed boxes (for classical extraction)
@@ -74,7 +74,7 @@ ID-Card-Line-Extraction-System-for-Use-in-the-OCR-Engine/
 │  └─ best_yolov8s_seg.pt
 │
 ├─ 0_IDs_input/            # Place raw images here (any orientation)
-├─ 0_IDs_derotation_ref/   # A few upright rectified refs for corr.py averaging
+├─ 0_IDs_derotation_ref/   # A few upright rectified refs for derotate.py averaging
 ├─ 1_IDs_rectified/        # (auto) rectified outputs
 ├─ 2_IDs_derotated/        # (auto) orientation-correct outputs
 ├─ 3_ROIs_classic/         # (auto) crops for classical mode
@@ -180,7 +180,7 @@ segmentation_model  = "models/best_yolov8s_seg.pt"
 ```mermaid
 flowchart LR
   A["Raw ID images: 0_IDs_input"] --> B["Rectification: rectify.py -> 1000x631"]
-  B --> C["Derotation 0 or 180: corr.py ROI correlation"]
+  B --> C["Derotation 0 or 180: derotate.py ROI correlation"]
   C --> D{Extraction Mode}
   D -->|classic| E["roi_extract.py using ROIs.json"]
   D -->|det| F["infer_det.py YOLO or RT-DETR"]
@@ -194,7 +194,7 @@ flowchart LR
 - Preprocess → Canny → Hough Lines → 4-corner intersections → 4-pt transform  
 - Standardize to **1000×631** (handles **90°/270°**)  
 
-**Derotation (`corr.py`)**  
+**Derotation (`derotate.py`)**  
 - Green-channel correlation vs averaged upright ROI  
 - Final 0° vs 180° flip decision  
 
