@@ -21,3 +21,4 @@ models/egyId_weights.pt
 inf.py
 test.py
 *.docx
+*.tmp
