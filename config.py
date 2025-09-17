@@ -2,7 +2,7 @@
 device = "cpu"
 
 # ROIs extract using: "classic" for classical method | "det" for detection model | "seg" for segmenation model
-extract_option = "seg"
+extract_option = "classic"
 
 # detection_model: "detr" for RT-DETR | "yolo" for YOLO
 detection_model = "yolo"

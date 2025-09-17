@@ -5,10 +5,11 @@ import argparse, shutil
 from pathlib import Path
 from ultralytics import YOLO
 from config import *
+import numpy as np
 
 # Configrataions
 conf_thresh = 0.1
-img_size = 640*2
+img_size = 1280
 device=device
 image_types = image_input_types
 model_path = segmenation_model_path
@@ -19,7 +20,7 @@ This function to make the output crops are withing the input image size
 def clamp(val, lo, hi): return max(lo, min(int(val), hi))
 
 """
-This function takes two "Path" types to run model inference on the input directory and save crops in another one
+This function run model inference on the input directory and save crops in another one
 """
 def run_inference(input_dir, save_dir):
 
@@ -78,6 +79,7 @@ def run_inference(input_dir, save_dir):
                 crop_num = 4 
             else:
                 continue 
+            
             cv2.imwrite(str(out_dir / f"{crop_num}_{class_name}_{conf:.2f}.jpg"), crop)
             det_count+=1
 

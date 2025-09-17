@@ -146,7 +146,7 @@ def get_cnt(edged, img, ratio):
     # Lines detector set of points x,y
     lines = cv2.HoughLines(edgelines, 1, np.pi / 180, 200) # ρ = xcosθ + ysinθ
     if lines is None or len(lines) < 4:
-        raise Exception("Lines not found.")
+        raise Exception("Lines not found")
 
     strong_lines = np.zeros([4, 1, 2])
     n2 = 0
@@ -205,32 +205,18 @@ def get_cnt(edged, img, ratio):
 """
 Image post processing functions
 """
-# def finetune(img, ratio):
-#     offset = int(2 * ratio)
-#     img = img[offset + 15:img.shape[0] - offset,
-#               int(offset * 2):img.shape[1] - int(offset * 2), :]
-#     if img.shape[0] < img.shape[1]:
-#         img = cv2.resize(img, (img.shape[1], int(img.shape[1] / 856 * 540)))
-#         r = int(img.shape[1] / 856 * 31.8)
-#     else:
-#         img = cv2.resize(img, (img.shape[1], int(img.shape[1] / 540 * 856)))
-#         r = int(img.shape[1] / 540 * 31.8)
-#     # img = set_corner(img, r)
-#     if img.shape[0] > img.shape[1]:
-#         img = cv2.transpose(img)
-#         img = cv2.flip(img, 0)
-#     return img
-def finetune(img, ratio):
-    offset = int(2 * ratio)
-    img = img[offset + 15:img.shape[0] - offset,
-              int(offset * 2):img.shape[1] - int(offset * 2), :]
+def postprocess(img, ratio):
+    # crop the dark edging from lightening
+    img = img[int(2*ratio+15):img.shape[0] - int(2*ratio),
+              int(int(2*ratio)*2):img.shape[1] - int(int(2* ratio)*2), :]
+    
+    # keep the ratio as the egyptian card ration
     if img.shape[0] < img.shape[1]:
-        img = cv2.resize(img, (img.shape[1], int(img.shape[1] / 1000 * 631)))
-        r = int(img.shape[1] / 1000 * 37.15)
+        img = cv2.resize(img, (img.shape[1], int(img.shape[1] / 1000 * 630.84)))
     else:
-        img = cv2.resize(img, (img.shape[1], int(img.shape[1] / 631 * 1000)))
-        r = int(img.shape[1] / 631 * 37.15)
-    # img = set_corner(img, r)
+        img = cv2.resize(img, (img.shape[1], int(img.shape[1] / 630.84 * 1000)))
+
+    # rotate  90deg if the highet > width (the card is 90deg oriented)
     if img.shape[0] > img.shape[1]:
         img = cv2.transpose(img)
         img = cv2.flip(img, 0)
@@ -255,17 +241,22 @@ def inference_all(input_dir, output_dir):
 
         try:
             edged = detect_edge(img)
+            # cv2.imshow('edges', edged)
+            # cv2.waitKey(0)
+            # cv2.destroyAllWindows()
             corners = get_cnt(edged, img, ratio)
 
             # get the four coners and the returns the oriented reactanglar card as horizontal one |___|
             result = four_point_transform(image, corners.reshape(4, 2))
 
-            result = finetune(result, ratio)
+            result = postprocess(result, ratio)
 
             result = cv2.resize(result, (1000, 631), interpolation=cv2.INTER_AREA)      # 1000/631 = 1.584 is the original egyptian id card scale (W/H)
+            
             cv2.imwrite(out_path, result)
             print(f"Rectified image {1+count} saved in " + os.path.abspath(out_path))
             count = count + 1
+
         except Exception as e:
             print(f"Failed, {file_list[i]} can not be rectified, {e}")
 

@@ -20,7 +20,7 @@ This function to make the output crops are withing the input image size
 def clamp(val, lo, hi): return max(lo, min(int(val), hi))
 
 """
-This function takes two "Path" types to run model inference on the input directory and save crops in another one
+This function to run model inference on the input directory and save crops in another one
 """
 def run_inference(input_dir, save_dir):
 
